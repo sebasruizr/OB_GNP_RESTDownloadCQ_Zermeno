@@ -1,0 +1,203 @@
+swagger: "2.0"
+info:
+  description: "Documentación del API de integración REST de GNP - OnBase"
+  version: "1.0.0"
+  title: "Artisoft.OnBase.Gnp.RestIntegration"
+  contact:
+    name: 'Artisoft de México S.A. de C.V.'
+    email: "alfredo.zermeno@artisoft.com.mx"
+host: "127.0.0.1:5000"
+basePath: "/api"
+tags:
+  - name: "authentication"
+    description: "Servicios relacionados ocn la autenticación y autorización del API"
+  - name: "docs"
+    description: "Servicios de para interactuar con el recurso Document en OnBase"
+schemes:
+  #  - "https"
+  - "http"
+paths:
+  /authentication/login:
+    post:
+      tags:
+        - "authentication"
+      summary: "Creación de token"
+      operationId: "login"
+      description: "Este servicio debe utilizarse para crear un nuevo token de sesión que será utilizado en el resto de las operaciones.<br>
+      Es requerido tener un usuario válido de OnBase."
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+        - "application/xml"
+      parameters:
+        - in: "body"
+          name: "body"
+          description: "Objeto de autenticación"
+          required: true
+          schema:
+            $ref: "#/definitions/AuthenticationRequest"
+      responses:
+        "401":
+          description: "Usuario y/o contraseña incorrectos"
+        "200":
+          description: "Autenticación exitosa"
+          schema:
+            $ref: "#/definitions/AuthenticationResponse"
+              
+  /authentication/logout:
+    post:
+      tags:
+        - "authentication"
+      summary: "Eliminación de token"
+      description: 'Destruye el token de autenticación y termina la sesión de trabajo con OnBase.<br>
+      Es muy importante ejecutar siempre este servicio una vez que se ha terminado con el trabajo de la sesión.'
+      operationId: "logout"
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+        - "application/xml"
+      responses:
+        "204":
+          description: "Token destruido con éxito"
+      security:
+        - session-token: []
+  /docs:
+    get:
+      tags:
+        - docs
+      summary: Obtiene los documentos utilizando un query personalizado
+      description: 'Devuelve los documentos que hay en OnBase utilizando un query personalizado y parámetros de búsqueda predefinidos.'
+      operationId: findDocsByQueryId
+      produces:
+        - application/json
+        - application/xml
+      parameters:
+        - name: queryId
+          in: query
+          type: integer
+          format: int64
+          description: 'Id del query predefinido que será utilizadopara la busqueda'
+        - name: filter
+          type: array
+          items:
+            type: string
+          in: query
+          collectionFormat: multi
+          description: |
+            Filtros que deberán aplicarse al query, el formato debe de ser **keywordId,operator,value** donde:
+            - **keywordId** Es el id del keyword que será utilizado como filtro.
+            - **operator** Es cualquier operador válido para OnBase:
+              - Equal
+              - LessThan
+              - GreaterThan
+              - LessThanEqual
+              - GreaterThanEqual
+              - NotEqual
+              - Literal
+            - **value** El valor contra el cual se deberá comparar el contenido del keyword.
+            
+            Ejemplo del valor de un filtro: **4626,Equal,420130**
+            
+            Ejemplo de la url con múltiples filtros: **/api/docs?filter=4626,Equal,420130&filter=4630,NotEqual,1126***
+      responses:
+        "200":
+          description: Operación exitosa
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/DocumentResponse"
+            xml:
+              name: ArrayOfDocumentResponse
+      security:
+        - session-token: []
+  /docs/{id}:
+    get:
+      tags:
+        - docs
+      summary: Obtiene un archivo por id
+      description: 'Devuelve el contenido del archivo especificado por id.'
+      operationId: getDocById
+      produces:
+        - application/octet-stream
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: integer
+          format: int64
+          description: 'Id del documento a obtener'
+      responses:
+        "200":
+          description: Operación exitosa
+          schema:
+            type: file
+            
+      security:
+        - session-token: []
+
+securityDefinitions:
+  session-token:
+    type: apiKey
+    description: Token obtenido con la operación Login
+    name: "x-gnp-session-token"
+    in: "header"
+definitions:
+  AuthenticationRequest:
+    type: object
+    properties:
+      username:
+        type: string
+        description: Nombre de usuario de OnBase
+      password:
+        type: string
+        description: Contraseña del usuario de OnBase
+  AuthenticationResponse:
+    type: object
+    properties:
+      authToken:
+        type: string
+        format: uuid
+        description: Token de sesión requerido para ejecutar cualquier operacón (excluyendo Login).
+      creationDate:
+        type: string
+        format: 'date-time'
+        description: 'Momento en el que se generó el token. Formato: yyyy-MM-ddTHH:mm:ss.fffzzz'
+    xml:
+      name: AuthenticationResponse
+    example:
+      authToken: '3fa85f64-5717-4562-b3fc-2c963f66afa6'
+      creationDate: '2020-06-12T06:52:07.959-05:00'
+  DocumentResponse:
+    type: object
+    properties:
+      id:
+        type: integer
+        format: int64
+        description: Id del documento
+      name:
+        type: string
+        description: Nombre del documento
+      keywords:
+        type: array
+        items:
+          $ref: '#/definitions/DocumentKeywordResponse'
+    xml:
+      name: DocumentResponse
+  DocumentKeywordResponse:
+    type: object
+    properties:
+      id:
+        type: integer
+        format: int64
+        description: Id de la palabra clave
+      name:
+        type: string
+        description: Nombre de la palabra clave
+      value:
+        type: string
+        description: Valor ocntenido en la palabra clave
+    xml:
+      name: DocumentKeywordResponse
+

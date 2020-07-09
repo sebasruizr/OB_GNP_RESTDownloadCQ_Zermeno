@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<con:soapui-workspace name="GnpRestIntegration" soapui-version="5.5.0" xmlns:con="http://eviware.com/soapui/config">
+  <con:settings/>
+  <con:project name="RestIntegration">/Users/alfredozn/workspace/artisoft/GNP/Artisoft.OnBase.Gnp.RestIntegration/soapui/RestIntegration-soapui-project.xml</con:project>
+  <con:collectInfoForSupport>false</con:collectInfoForSupport>
+</con:soapui-workspace>
